@@ -5,15 +5,8 @@ env:
   DBT_PROJECT_DIR: '.'
   DBT_PROFILES_DIR: '.'
   DBT_PROFILE: 'jaffle_shop_demo'
-  DBT_TARGET: 'DEV'
+  DBT_TARGET: 'dev'
 
-  # Variable for dbt profiles
-  REDSHIFT_HOSTNAME: 'dummy'
-  REDSHIFT_USER: 'dummy'
-  REDSHIFT_PASSWORD: 'dummy'
-  REDSHIFT_ENV: 'dev'
-  PIPELINE_ID: 'dummy'
-  
   # Node.js Configuration
   NODE_VERSION: '18'
   
