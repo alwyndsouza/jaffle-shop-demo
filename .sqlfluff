@@ -1,40 +1,45 @@
 [sqlfluff]
-templater = dbt-cloud
-dialect = snowflake
-runaway_limit = 10
-max_line_length = 80
-indent_unit = space
+dialect = databricks
+templater = dbt
+max_line_length = 150
+large_file_skip_byte_limit = 0
+sql_file_exts = .sql
+processes = -1
+exclude_rules = CV11, AM02
+
 
 [sqlfluff:templater:dbt]
+project_dir = .
 profiles_dir = .
+apply_dbt_builtins = True
 
 [sqlfluff:indentation]
 tab_space_size = 4
-
-[sqlfluff:layout:type:comma]
-spacing_before = touch
-line_position = trailing
-
-[sqlfluff:rules:capitalisation.keywords]
-capitalisation_policy = lower
+indent_unit = space
+allow_implicit_indents = True
 
 [sqlfluff:rules:aliasing.table]
 aliasing = explicit
-
 [sqlfluff:rules:aliasing.column]
 aliasing = explicit
+[sqlfluff:rules:aliasing.length]
+min_alias_length = 2
 
-[sqlfluff:rules:aliasing.expression]
-allow_scalar = False
-
+[sqlfluff:rules:capitalisation.keywords]
+capitalisation_policy = lower
 [sqlfluff:rules:capitalisation.identifiers]
 extended_capitalisation_policy = lower
-
 [sqlfluff:rules:capitalisation.functions]
-capitalisation_policy = lower
-
+extended_capitalisation_policy = lower
 [sqlfluff:rules:capitalisation.literals]
 capitalisation_policy = lower
+[sqlfluff:rules:capitalisation.types]
+extended_capitalisation_policy = lower
 
-[sqlfluff:rules:ambiguous.column_references]  # Number in group by
-group_by_and_order_by_style = implicit
+[sqlfluff:rules:ambiguous.column_references]
+group_by_and_order_by_style = explicit
+
+[sqlfluff:rules:layout.long_lines]
+ignore_comment_lines = true
+ignore_comment_clauses = true
+

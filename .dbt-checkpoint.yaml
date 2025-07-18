@@ -1,0 +1,5 @@
+version: 1
+dbt-project-dir: .
+profiles-dir: .
+profile: jaffle_shop_demo
+target: dev

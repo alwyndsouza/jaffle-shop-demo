@@ -36,24 +36,9 @@ unit_tests:
     given:
       - input: ref('order_items')
         rows:
-          - {
-              order_id: 1,
-              order_item_id: 1,
-              is_drink_item: false,
-              is_food_item: true,
-            }
-          - {
-              order_id: 1,
-              order_item_id: 2,
-              is_drink_item: true,
-              is_food_item: false,
-            }
-          - {
-              order_id: 2,
-              order_item_id: 3,
-              is_drink_item: false,
-              is_food_item: true,
-            }
+          - { order_id: 1, order_item_id: 1, is_drink_item: false, is_food_item: true }
+          - { order_id: 1, order_item_id: 2, is_drink_item: true, is_food_item: false }
+          - { order_id: 2, order_item_id: 3, is_drink_item: false, is_food_item: true }
       - input: ref('stg_orders')
         rows:
           - { order_id: 1 }

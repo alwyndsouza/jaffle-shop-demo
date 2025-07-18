@@ -1,0 +1,40 @@
+{
+  "printWidth": 120,
+  "tabWidth": 2,
+  "useTabs": false,
+  "semi": true,
+  "singleQuote": true,
+  "quoteProps": "as-needed",
+  "trailingComma": "es5",
+  "bracketSpacing": true,
+  "bracketSameLine": false,
+  "arrowParens": "always",
+  "endOfLine": "lf",
+  "overrides": [
+    {
+      "files": [
+        "*.yml",
+        "*.yaml"
+      ],
+      "options": {
+        "printWidth": 100,
+        "tabWidth": 2,
+        "useTabs": false,
+        "singleQuote": false,
+        "bracketSpacing": true,
+        "proseWrap": "preserve"
+      }
+    },
+    {
+      "files": [
+        "dbt_project.yml",
+        "profiles.yml"
+      ],
+      "options": {
+        "printWidth": 120,
+        "tabWidth": 2,
+        "singleQuote": false
+      }
+    }
+  ]
+}
