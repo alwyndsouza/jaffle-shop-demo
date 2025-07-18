@@ -1,0 +1,11 @@
+jaffle_shop_demo:
+  outputs:
+    dev:
+      type: databricks
+      catalog: default
+      schema: alwyn_dev
+      host: dbc-49db3428-d3d7.cloud.databricks.com
+      http_path: /sql/1.0/warehouses/8f808b87a257bcf4
+      auth_type: oauth
+      threads: 1
+  target: dev
