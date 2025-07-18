@@ -8,12 +8,12 @@
     "prettier": "^3.6.2"
   },
   "scripts": {
-    "format:dbt": "prettier --write 'dbt/siebel/**/*.{yml,yaml}'",
-    "format:check:dbt": "prettier --check 'dbt/siebel/**/*.{yml,yaml}'",
+    "format:dbt": "prettier --write './**/*.{yml,yaml}'",
+    "format:check:dbt": "prettier --check './**/*.{yml,yaml}'",
     "prepare": "husky install"
   },
   "lint-staged": {
-    "dbt/siebel/**/*.{yml,yaml}": [
+    "./**/*.{yml,yaml}": [
       "prettier --write"
     ]
   }
