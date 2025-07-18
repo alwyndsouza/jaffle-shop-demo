@@ -43,14 +43,14 @@ repos:
     hooks:
       - id: prettier-local
         name: Run Prettier via npm
-        entry: bash -c 'npm install --save-dev prettier && prettier "models/**/*.{yml,yaml}" --write'
+        entry: bash -c 'npm run format:dbt'
         language: python
         types: [yaml]
         pass_filenames: false
         always_run: false
         description: "Ensure npm is installed and run Prettier on the models directory."
         additional_dependencies: [npm]
-        stages: [manual]
+        stages: [pre-commit, manual]
 
   - repo: https://github.com/dbt-checkpoint/dbt-checkpoint
     rev: v2.0.7

@@ -18,7 +18,6 @@ renamed as (
         type as product_type,
         description as product_description,
 
-
         ---------- numerics
         {{ cents_to_dollars('price') }} as product_price,
 
