@@ -50,7 +50,7 @@ repos:
         always_run: false
         description: "Ensure npm is installed and run Prettier on the models directory."
         additional_dependencies: [npm]
-        stages: [pre-commit, manual]
+        stages: [manual]
 
   - repo: https://github.com/dbt-checkpoint/dbt-checkpoint
     rev: v2.0.7
