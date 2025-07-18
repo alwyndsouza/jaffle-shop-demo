@@ -4,7 +4,6 @@ name: "jaffle_shop_demo"
 version: "3.0.0"
 require-dbt-version: ">=1.5.0"
 
-
 profile: jaffle_shop_demo # Put your profile here
 
 model-paths: ["models"]

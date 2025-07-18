@@ -3,123 +3,128 @@
 
 fail_fast: false
 repos:
-- repo: https://github.com/pre-commit/pre-commit-hooks
-  rev: v5.0.0
-  hooks:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
       - id: trailing-whitespace
         files: ^(models|macros|tests)/.*\.(sql|yml|yaml|md)$
         args: [--markdown-linebreak-ext=md]
-        stages: [pre-commit,manual]
+        stages: [pre-commit, manual]
 
       - id: end-of-file-fixer
         files: ^(models|macros|tests)/.*\.(sql|yml|yaml|md)$
-        stages: [pre-commit,manual]
+        stages: [pre-commit, manual]
 
       - id: check-added-large-files
         files: ^
-        args: ['--maxkb=1024']
-        stages: [pre-commit,manual]
+        args: ["--maxkb=1024"]
+        stages: [pre-commit, manual]
 
       - id: detect-private-key
         files: ^
-        stages: [pre-commit,manual]
+        stages: [pre-commit, manual]
 
       - id: check-case-conflict
         files: ^
-        stages: [pre-commit,manual]
+        stages: [pre-commit, manual]
 
       - id: mixed-line-ending
         files: ^(models|macros|tests)/.*\.(sql|yml|yaml|md)$
         args: [--fix=lf]
-        stages: [pre-commit,manual]
+        stages: [pre-commit, manual]
 
-- repo: https://github.com/gitleaks/gitleaks
-  rev: v8.27.2
-  hooks:
-    - id: gitleaks
-      stages: [pre-commit,manual]
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.27.2
+    hooks:
+      - id: gitleaks
+        stages: [pre-commit, manual]
 
-- repo: local
-  hooks:
-    - id: prettier-local
-      name: Run Prettier via npm
-      entry: bash -c 'npm install --save-dev prettier && prettier "models/**/*.{yml,yaml}" --write'
-      language: python
-      types: [yaml]
-      pass_filenames: false
-      always_run: false
-      description: "Ensure npm is installed and run Prettier on the models directory."
-      additional_dependencies: [npm]
-      stages: [manual]
-      
-- repo: https://github.com/dbt-checkpoint/dbt-checkpoint
-  rev: v2.0.7
-  hooks:
-    # Stage 1: Basic parsing and validation
-    - id: dbt-parse
-      args: ["--cmd-flags", "++profiles-dir", ".", "++project-dir", "."]
-      stages: [pre-commit,manual]
+  - repo: local
+    hooks:
+      - id: prettier-local
+        name: Run Prettier via npm
+        entry: bash -c 'npm install --save-dev prettier && prettier "models/**/*.{yml,yaml}" --write'
+        language: python
+        types: [yaml]
+        pass_filenames: false
+        always_run: false
+        description: "Ensure npm is installed and run Prettier on the models directory."
+        additional_dependencies: [npm]
+        stages: [manual]
 
-    - id: dbt-docs-generate
-      stages: [manual]
-      #args: ["--cmd-flags","++empty-catalog", "++profiles-dir", ".", "++project-dir", "."]
+  - repo: https://github.com/dbt-checkpoint/dbt-checkpoint
+    rev: v2.0.7
+    hooks:
+      # Stage 1: Basic parsing and validation
+      - id: dbt-parse
+        args: ["--cmd-flags", "++profiles-dir", ".", "++project-dir", "."]
+        stages: [pre-commit, manual]
 
-    # Stage 2: Model testing and documentation checks
-    - id: check-model-has-tests
-      args: ["--test-cnt", "2", "--exclude", "dbt_packages|stg_reference__country_mapping|stg_siebel__proposition_hierarchy|stg_siebel__edm_trnln", "--"]
-      stages: [pre-commit,manual]
+      - id: dbt-docs-generate
+        stages: [manual]
+        #args: ["--cmd-flags","++empty-catalog", "++profiles-dir", ".", "++project-dir", "."]
 
-    - id: check-model-has-all-columns
-      files: ^models
-      stages: [manual]
+      # Stage 2: Model testing and documentation checks
+      - id: check-model-has-tests
+        args:
+          [
+            "--test-cnt",
+            "2",
+            "--exclude",
+            "dbt_packages|stg_reference__country_mapping|stg_siebel__proposition_hierarchy|stg_siebel__edm_trnln",
+            "--",
+          ]
+        stages: [pre-commit, manual]
 
-    - id: check-model-has-properties-file
-      files: ^models
-      stages: [pre-commit,manual]
+      - id: check-model-has-all-columns
+        files: ^models
+        stages: [manual]
 
-    # Stage 3: Code quality and reference checks
-    - id: check-script-ref-and-source
-      files: ^models
-      stages: [pre-commit,manual]
+      - id: check-model-has-properties-file
+        files: ^models
+        stages: [pre-commit, manual]
 
-    # Stage 4: SQL style checks
-    - id: check-script-semicolon
-      files: ^models
-      stages: [pre-commit,manual]
+      # Stage 3: Code quality and reference checks
+      - id: check-script-ref-and-source
+        files: ^models
+        stages: [pre-commit, manual]
 
-    - id: check-script-has-no-table-name
-      files: ^models/
-      stages: [pre-commit,manual]
+      # Stage 4: SQL style checks
+      - id: check-script-semicolon
+        files: ^models
+        stages: [pre-commit, manual]
 
-    # Stage 5: Documentation completeness
-    - id: check-model-has-description
-      files: ^models
-      stages: [pre-commit,manual]
+      - id: check-script-has-no-table-name
+        files: ^models/
+        stages: [pre-commit, manual]
 
-    - id: check-model-columns-have-desc
-      files: ^models
-      stages: [pre-commit,manual]
+      # Stage 5: Documentation completeness
+      - id: check-model-has-description
+        files: ^models
+        stages: [pre-commit, manual]
 
+      - id: check-model-columns-have-desc
+        files: ^models
+        stages: [pre-commit, manual]
 
-# === SQLFluff Formatting Hooks ===
-- repo: https://github.com/sqlfluff/sqlfluff
-  rev: 3.4.1
-  hooks:
-  - id: sqlfluff-lint
-    args: ["--config", ".sqlfluff", "--ignore", ".sqlfluffignore"]
-    additional_dependencies: [sqlfluff-templater-dbt, dbt-core, dbt-databricks]
-    files: ^models
-    stages: [manual]
+  # === SQLFluff Formatting Hooks ===
+  - repo: https://github.com/sqlfluff/sqlfluff
+    rev: 3.4.1
+    hooks:
+      - id: sqlfluff-lint
+        args: ["--config", ".sqlfluff", "--ignore", ".sqlfluffignore"]
+        additional_dependencies: [sqlfluff-templater-dbt, dbt-core, dbt-databricks]
+        files: ^models
+        stages: [manual]
 
-  - id: sqlfluff-fix
-    args: ["--config", ".sqlfluff", "--ignore", ".sqlfluffignore"]
-    additional_dependencies: [sqlfluff-templater-dbt, dbt-core, dbt-databricks]
-    files: ^models
-    stages: [manual]
-
+      - id: sqlfluff-fix
+        args: ["--config", ".sqlfluff", "--ignore", ".sqlfluffignore"]
+        additional_dependencies: [sqlfluff-templater-dbt, dbt-core, dbt-databricks]
+        files: ^models
+        stages: [manual]
 # ====================================================================================================================
 # More tests I like that we will add later
-# TODO: 
+# TODO:
 # add a pre-hook to check if the source data types and stahging data types match
 # - id: check-model-has-all-columns
 # - id: check-script-ref-and-source

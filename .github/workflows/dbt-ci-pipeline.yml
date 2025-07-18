@@ -2,21 +2,21 @@ name: dbt-ci-pipeline
 
 env:
   # dbt Configuration
-  DBT_PROJECT_DIR: '.'
-  DBT_PROFILES_DIR: '.'
-  DBT_PROFILE: 'jaffle_shop_demo'
-  DBT_TARGET: 'dev'
+  DBT_PROJECT_DIR: "."
+  DBT_PROFILES_DIR: "."
+  DBT_PROFILE: "jaffle_shop_demo"
+  DBT_TARGET: "dev"
 
   # Node.js Configuration
-  NODE_VERSION: '18'
-  
+  NODE_VERSION: "18"
+
   # Python Configuration
-  PYTHON_VERSION: '3.10'
-  
+  PYTHON_VERSION: "3.10"
+
   # dbt adapter versions
-  DBT_CORE_VERSION: '1.9.8'
-  DBT_REDSHIFT_VERSION: '1.9.5'
-  
+  DBT_CORE_VERSION: "1.9.8"
+  DBT_REDSHIFT_VERSION: "1.9.5"
+
   # Emojis for output formatting
   EMOJI_ROCKET: "\U0001F680"
   EMOJI_BAR_CHART: "\U0001F4CA"
@@ -47,7 +47,7 @@ jobs:
   setup-and-validate:
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    
+
     # Define outputs for changed files
     outputs:
       dbt-files-changed: ${{ steps.changes.outputs.dbt-files }}
@@ -56,7 +56,7 @@ jobs:
       start_time: ${{ steps.start_time.outputs.start_time }}
       start_time_readable: ${{ steps.start_time.outputs.start_time_readable }}
       duration: ${{ steps.duration.outputs.duration }}
-    
+
     steps:
       # Record the start time for the job
       - name: Record start time
@@ -101,7 +101,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-          cache: 'pip'
+          cache: "pip"
 
       # Install required Python dependencies for dbt and pre-commit
       - name: Install Python dependencies
@@ -145,7 +145,7 @@ jobs:
       start_time: ${{ steps.start_time.outputs.start_time }}
       start_time_readable: ${{ steps.start_time.outputs.start_time_readable }}
       duration: ${{ steps.duration.outputs.duration }}
-    
+
     steps:
       # Record the start time for the job
       - name: Record start time
@@ -165,7 +165,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-          cache: 'pip'
+          cache: "pip"
 
       # Install required Python dependencies for dbt and pre-commit
       - name: Install Python dependencies
@@ -198,7 +198,7 @@ jobs:
           # Get list of changed files
           git fetch origin ${{ github.event.pull_request.base.ref }}
           CHANGED_FILES=$(git diff --name-only origin/${{ github.event.pull_request.base.ref }}...HEAD)
-          
+
           if [ -n "$CHANGED_FILES" ]; then
             echo "Changed files:"
             echo "$CHANGED_FILES"
@@ -281,7 +281,7 @@ jobs:
           echo "" >> precommit_results.md
 
           PRE_COMMIT_FAILED=0
-          
+
           # Run pre-commit with detailed output
           if pre-commit run --all-files --verbose 2>&1 | tee precommit_output.txt; then
             echo "$EMOJI_CHECK_MARK All pre-commit hooks passed" >> precommit_results.md
@@ -295,7 +295,7 @@ jobs:
           echo "### Hook Summary:" >> precommit_results.md
           echo "| Hook | Status | Duration |" >> precommit_results.md
           echo "|------|--------|----------|" >> precommit_results.md
-          
+
           # Extract hook results from output
           while IFS= read -r line; do
             if echo "$line" | grep -qE "\.\.\.(Passed|Failed|Skipped)"; then
@@ -368,7 +368,7 @@ jobs:
       start_time: ${{ steps.start_time.outputs.start_time }}
       start_time_readable: ${{ steps.start_time.outputs.start_time_readable }}
       duration: ${{ steps.duration.outputs.duration }}
-    
+
     steps:
       # Record the start time for the job
       - name: Record start time
@@ -388,7 +388,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          cache: "npm"
 
       # Install Node.js dependencies
       - name: Install Node.js dependencies
@@ -399,14 +399,14 @@ jobs:
         if: github.event_name == 'pull_request'
         run: |
           set -o pipefail
-          
+
           # Get list of changed YAML files
           git fetch origin ${{ github.event.pull_request.base.ref }}
           CHANGED_YAML_FILES=$(git diff --name-only origin/${{ github.event.pull_request.base.ref }}...HEAD | grep -E '.*\.(yml|yaml)$' || true)
-          
+
           echo "## Prettier Check Results" > prettier_results.md
           echo "" >> prettier_results.md
-          
+
           if [ -n "$CHANGED_YAML_FILES" ]; then
             echo "### Files Checked:" >> prettier_results.md
             echo '```' >> prettier_results.md
@@ -446,12 +446,12 @@ jobs:
         if: github.event_name == 'push'
         run: |
           set -o pipefail
-          
+
           echo "## Prettier Check Results (All YAML Files)" > prettier_results.md
           echo "" >> prettier_results.md
-          
+
           PRETTIER_FAILED=0
-          
+
           # Run prettier check and capture output
           if npm run format:check:dbt 2>&1 | tee prettier_output.txt; then
             echo "$EMOJI_CHECK_MARK All YAML files are properly formatted" >> prettier_results.md
@@ -459,13 +459,13 @@ jobs:
             echo "$EMOJI_CROSS_MARK Some YAML files need formatting" >> prettier_results.md
             PRETTIER_FAILED=1
           fi
-          
+
           echo "" >> prettier_results.md
           echo "### Prettier Output:" >> prettier_results.md
           echo '```' >> prettier_results.md
           cat prettier_output.txt >> prettier_results.md
           echo '```' >> prettier_results.md
-          
+
           if [ $PRETTIER_FAILED -eq 1 ]; then
             echo "" >> prettier_results.md
             echo "**Fix formatting by running:** \`npm run format:dbt\`" >> prettier_results.md
