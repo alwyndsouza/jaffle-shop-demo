@@ -1,0 +1,574 @@
+name: dbt-ci-pipeline
+
+env:
+  # dbt Configuration
+  DBT_PROJECT_DIR: '.'
+  DBT_PROFILES_DIR: '.'
+  DBT_PROFILE: 'jaffle_shop_demo'
+  DBT_TARGET: 'DEV'
+
+  # Variable for dbt profiles
+  REDSHIFT_HOSTNAME: 'dummy'
+  REDSHIFT_USER: 'dummy'
+  REDSHIFT_PASSWORD: 'dummy'
+  REDSHIFT_ENV: 'dev'
+  PIPELINE_ID: 'dummy'
+  
+  # Node.js Configuration
+  NODE_VERSION: '18'
+  
+  # Python Configuration
+  PYTHON_VERSION: '3.10'
+  
+  # dbt adapter versions
+  DBT_CORE_VERSION: '1.9.8'
+  DBT_REDSHIFT_VERSION: '1.9.5'
+  
+  # Emojis for output formatting
+  EMOJI_ROCKET: "\U0001F680"
+  EMOJI_BAR_CHART: "\U0001F4CA"
+  EMOJI_CHECK_MARK: "\u2705"
+  EMOJI_CROSS_MARK: "\u274C"
+  EMOJI_NEXT_TRACK: "\u23ED\uFE0F"
+  EMOJI_MAGNIFYING_GLASS: "\U0001F50D"
+  EMOJI_PAPERCLIP: "\U0001F4CE"
+  EMOJI_PARTY_POPPER: "\U0001F389"
+  EMOJI_PAINT_BRUSH: "\U0001F58C\uFE0F"
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+      - dev
+      - feature/*
+
+# Cancel previous workflow runs if new changes are pushed
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  setup-and-validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    
+    # Define outputs for changed files
+    outputs:
+      dbt-files-changed: ${{ steps.changes.outputs.dbt-files }}
+      any-files-changed: ${{ steps.changes.outputs.any-changed }}
+      yaml-files-changed: ${{ steps.changes.outputs.yaml-files }}
+      start_time: ${{ steps.start_time.outputs.start_time }}
+      start_time_readable: ${{ steps.start_time.outputs.start_time_readable }}
+      duration: ${{ steps.duration.outputs.duration }}
+    
+    steps:
+      # Record the start time for the job
+      - name: Record start time
+        id: start_time
+        run: |
+          echo "start_time=$(date +%s)" >> $GITHUB_OUTPUT
+          echo "start_time_readable=$(date -u '+%H:%M:%S UTC')" >> $GITHUB_OUTPUT
+
+      # Checkout the repository code
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Detect file changes
+      - name: Detect file changes
+        uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            dbt-files:
+              - 'models/**'
+              - 'macros/**'
+              - 'tests/**'
+              - 'analyses/**'
+              - 'snapshot/**'
+            yaml-files:
+              - '**/*.yml'
+              - '**/*.yaml'
+              - '*.yml'
+              - '*.yaml'
+              - '.pre-commit-config.yaml'
+              - '.dbt-checkpoint.yaml'
+            any-changed:
+              - '**'
+              - '.pre-commit-config.yaml'
+              - '.dbt-checkpoint.yaml'
+
+      # Set up the Python environment
+      - name: Set up Python
+        if: steps.changes.outputs.any-changed == 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      # Install required Python dependencies for dbt and pre-commit
+      - name: Install Python dependencies
+        if: steps.changes.outputs.any-changed == 'true'
+        run: |
+          python -m pip install --upgrade pip
+          pip install pre-commit
+          pip install dbt-core==${{ env.DBT_CORE_VERSION }}
+          pip install dbt-redshift==${{ env.DBT_REDSHIFT_VERSION }}
+          pip install sqlfluff sqlfluff-templater-dbt
+
+      # Cache pre-commit environments
+      - name: Cache pre-commit environments
+        if: steps.changes.outputs.any-changed == 'true'
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pre-commit
+          key: pre-commit-${{ runner.os }}-${{ hashFiles('.pre-commit-config.yaml') }}
+          restore-keys: |
+            pre-commit-${{ runner.os }}-
+
+      # Record end time and calculate duration
+      - name: Record end time and calculate duration
+        id: duration
+        if: always()
+        run: |
+          end_time=$(date +%s)
+          start_time=${{ steps.start_time.outputs.start_time }}
+          duration=$((end_time - start_time))
+          minutes=$((duration / 60))
+          seconds=$((duration % 60))
+          echo "duration=${minutes}m ${seconds}s" >> $GITHUB_OUTPUT
+
+  pre-commit-hooks:
+    runs-on: ubuntu-latest
+    needs: setup-and-validate
+    if: needs.setup-and-validate.outputs.any-files-changed == 'true'
+    timeout-minutes: 15
+
+    outputs:
+      start_time: ${{ steps.start_time.outputs.start_time }}
+      start_time_readable: ${{ steps.start_time.outputs.start_time_readable }}
+      duration: ${{ steps.duration.outputs.duration }}
+    
+    steps:
+      # Record the start time for the job
+      - name: Record start time
+        id: start_time
+        run: |
+          echo "start_time=$(date +%s)" >> $GITHUB_OUTPUT
+          echo "start_time_readable=$(date -u '+%H:%M:%S UTC')" >> $GITHUB_OUTPUT
+
+      # Checkout the repository code
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Set up the Python environment
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      # Install required Python dependencies for dbt and pre-commit
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pre-commit
+          pip install dbt-core==${{ env.DBT_CORE_VERSION }}
+          pip install dbt-redshift==${{ env.DBT_REDSHIFT_VERSION }}
+          pip install sqlfluff sqlfluff-templater-dbt
+
+      # Restore the pre-commit cache to speed up hook execution
+      - name: Restore pre-commit cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pre-commit
+          key: pre-commit-${{ runner.os }}-${{ hashFiles('.pre-commit-config.yaml') }}
+          restore-keys: |
+            pre-commit-${{ runner.os }}-
+
+      # Install pre-commit hooks
+      - name: Install pre-commit hooks
+        run: pre-commit install
+
+      # Run pre-commit hooks on changed files
+      - name: Run pre-commit hooks on changed files
+        if: github.event_name == 'pull_request'
+        run: |
+          set -o pipefail
+
+          # Get list of changed files
+          git fetch origin ${{ github.event.pull_request.base.ref }}
+          CHANGED_FILES=$(git diff --name-only origin/${{ github.event.pull_request.base.ref }}...HEAD)
+          
+          if [ -n "$CHANGED_FILES" ]; then
+            echo "Changed files:"
+            echo "$CHANGED_FILES"
+            
+            # Run pre-commit and capture output
+            echo "## Pre-commit Hook Results" > precommit_results.md
+            echo "" >> precommit_results.md
+            echo "### Files Changed:" >> precommit_results.md
+            echo '```' >> precommit_results.md
+            echo "$CHANGED_FILES" >> precommit_results.md
+            echo '```' >> precommit_results.md
+            echo "" >> precommit_results.md
+            
+            PRE_COMMIT_FAILED=0
+            # Run pre-commit with detailed output
+            if pre-commit run --files $CHANGED_FILES --verbose 2>&1 | tee precommit_output.txt; then
+              echo "$EMOJI_CHECK_MARK All pre-commit hooks passed" >> precommit_results.md
+            else
+              echo "$EMOJI_CROSS_MARK Some pre-commit hooks failed" >> precommit_results.md
+              PRE_COMMIT_FAILED=1
+            fi
+            
+            # Parse hook results
+            echo "" >> precommit_results.md
+            echo "### Hook Summary:" >> precommit_results.md
+            echo "| Hook | Status | Duration |" >> precommit_results.md
+            echo "|------|--------|----------|" >> precommit_results.md
+            
+            # Extract hook results from output
+            while IFS= read -r line; do
+              if echo "$line" | grep -qE "\.\.\.(Passed|Failed|Skipped)"; then
+                # Extract hook name (everything before the dots)
+                hook_name=$(echo "$line" | sed 's/\.\.\..*$//')
+                # Extract status
+                status=$(echo "$line" | grep -o -E "(Passed|Failed|Skipped)")
+                
+                # Read the next few lines to find duration
+                duration="N/A"
+                for i in {1..3}; do
+                  if IFS= read -r next_line; then
+                    if echo "$next_line" | grep -q "duration:"; then
+                      duration=$(echo "$next_line" | grep -o -E "[0-9]+\.[0-9]+s" || echo "N/A")
+                      break
+                    fi
+                  fi
+                done
+                
+                if [ "$status" = "Passed" ]; then
+                  echo "| $hook_name | $EMOJI_CHECK_MARK $status | $duration |" >> precommit_results.md
+                elif [ "$status" = "Failed" ]; then
+                  echo "| $hook_name | $EMOJI_CROSS_MARK $status | $duration |" >> precommit_results.md
+                else
+                  echo "| $hook_name | $EMOJI_NEXT_TRACK $status | $duration |" >> precommit_results.md
+                fi
+              fi
+            done < precommit_output.txt
+
+            echo "" >> precommit_results.md
+            echo "### Hook Details:" >> precommit_results.md
+            echo '```' >> precommit_results.md
+            cat precommit_output.txt >> precommit_results.md
+            echo '```' >> precommit_results.md
+
+            if [ $PRE_COMMIT_FAILED -eq 1 ]; then
+              echo ""
+              echo "Pre-commit hooks failed! Please fix the issues above."
+              exit 1
+            fi
+            
+          else
+            echo "No files changed" > precommit_results.md
+          fi
+
+      # Run pre-commit hooks on all files
+      - name: Run pre-commit hooks on all files
+        if: github.event_name == 'push'
+        run: |
+          set -o pipefail
+          echo "## Pre-commit Hook Results (All Files)" > precommit_results.md
+          echo "" >> precommit_results.md
+
+          PRE_COMMIT_FAILED=0
+          
+          # Run pre-commit with detailed output
+          if pre-commit run --all-files --verbose 2>&1 | tee precommit_output.txt; then
+            echo "$EMOJI_CHECK_MARK All pre-commit hooks passed" >> precommit_results.md
+          else
+            echo "$EMOJI_CROSS_MARK Some pre-commit hooks failed" >> precommit_results.md
+            PRE_COMMIT_FAILED=1
+          fi
+                  
+          # Parse hook results
+          echo "" >> precommit_results.md
+          echo "### Hook Summary:" >> precommit_results.md
+          echo "| Hook | Status | Duration |" >> precommit_results.md
+          echo "|------|--------|----------|" >> precommit_results.md
+          
+          # Extract hook results from output
+          while IFS= read -r line; do
+            if echo "$line" | grep -qE "\.\.\.(Passed|Failed|Skipped)"; then
+              # Extract hook name (everything before the dots)
+              hook_name=$(echo "$line" | sed 's/\.\.\..*$//')
+              # Extract status
+              status=$(echo "$line" | grep -o -E "(Passed|Failed|Skipped)")
+              
+              # Read the next few lines to find duration
+              duration="N/A"
+              for i in {1..3}; do
+                if IFS= read -r next_line; then
+                  if echo "$next_line" | grep -q "duration:"; then
+                    duration=$(echo "$next_line" | grep -o -E "[0-9]+\.[0-9]+s" || echo "N/A")
+                    break
+                  fi
+                fi
+              done
+              
+              if [ "$status" = "Passed" ]; then
+                echo "| $hook_name | $EMOJI_CHECK_MARK $status | $duration |" >> precommit_results.md
+              elif [ "$status" = "Failed" ]; then
+                echo "| $hook_name | $EMOJI_CROSS_MARK $status | $duration |" >> precommit_results.md
+              else
+                echo "| $hook_name | $EMOJI_NEXT_TRACK $status | $duration |" >> precommit_results.md
+              fi
+            fi
+          done < precommit_output.txt
+
+          echo "" >> precommit_results.md
+          echo "### Hook Details:" >> precommit_results.md
+          echo '```' >> precommit_results.md
+          cat precommit_output.txt >> precommit_results.md
+          echo '```' >> precommit_results.md
+
+          if [ $PRE_COMMIT_FAILED -eq 1 ]; then
+            echo ""
+            echo "Pre-commit hooks failed! Please fix the issues above."
+            exit 1
+          fi
+
+      # Upload pre-commit results
+      - name: Upload pre-commit results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: precommit-results
+          path: precommit_results.md
+          retention-days: 7
+
+      # Record end time and calculate duration
+      - name: Record end time and calculate duration
+        id: duration
+        if: always()
+        run: |
+          end_time=$(date +%s)
+          start_time=${{ steps.start_time.outputs.start_time }}
+          duration=$((end_time - start_time))
+          minutes=$((duration / 60))
+          seconds=$((duration % 60))
+          echo "duration=${minutes}m ${seconds}s" >> $GITHUB_OUTPUT
+
+  prettier-check:
+    runs-on: ubuntu-latest
+    needs: setup-and-validate
+    if: needs.setup-and-validate.outputs.yaml-files-changed == 'true'
+    timeout-minutes: 10
+
+    outputs:
+      start_time: ${{ steps.start_time.outputs.start_time }}
+      start_time_readable: ${{ steps.start_time.outputs.start_time_readable }}
+      duration: ${{ steps.duration.outputs.duration }}
+    
+    steps:
+      # Record the start time for the job
+      - name: Record start time
+        id: start_time
+        run: |
+          echo "start_time=$(date +%s)" >> $GITHUB_OUTPUT
+          echo "start_time_readable=$(date -u '+%H:%M:%S UTC')" >> $GITHUB_OUTPUT
+
+      # Checkout the repository code
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Set up Node.js environment
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      # Install Node.js dependencies
+      - name: Install Node.js dependencies
+        run: npm ci
+
+      # Run prettier check on changed YAML files (for PRs)
+      - name: Run prettier check on changed YAML files
+        if: github.event_name == 'pull_request'
+        run: |
+          set -o pipefail
+          
+          # Get list of changed YAML files
+          git fetch origin ${{ github.event.pull_request.base.ref }}
+          CHANGED_YAML_FILES=$(git diff --name-only origin/${{ github.event.pull_request.base.ref }}...HEAD | grep -E '.*\.(yml|yaml)$' || true)
+          
+          echo "## Prettier Check Results" > prettier_results.md
+          echo "" >> prettier_results.md
+          
+          if [ -n "$CHANGED_YAML_FILES" ]; then
+            echo "### Files Checked:" >> prettier_results.md
+            echo '```' >> prettier_results.md
+            echo "$CHANGED_YAML_FILES" >> prettier_results.md
+            echo '```' >> prettier_results.md
+            echo "" >> prettier_results.md
+            
+            PRETTIER_FAILED=0
+            
+            # Run prettier check and capture output
+            if npx prettier --check $CHANGED_YAML_FILES 2>&1 | tee prettier_output.txt; then
+              echo "$EMOJI_CHECK_MARK All YAML files are properly formatted" >> prettier_results.md
+            else
+              echo "$EMOJI_CROSS_MARK Some YAML files need formatting" >> prettier_results.md
+              PRETTIER_FAILED=1
+            fi
+            
+            echo "" >> prettier_results.md
+            echo "### Prettier Output:" >> prettier_results.md
+            echo '```' >> prettier_results.md
+            cat prettier_output.txt >> prettier_results.md
+            echo '```' >> prettier_results.md
+            
+            if [ $PRETTIER_FAILED -eq 1 ]; then
+              echo "" >> prettier_results.md
+              echo "**Fix formatting by running:** \`npm run format:dbt\`" >> prettier_results.md
+              echo ""
+              echo "Prettier check failed! Please fix the formatting issues above."
+              exit 1
+            fi
+          else
+            echo "No YAML files changed" >> prettier_results.md
+          fi
+
+      # Run prettier check on all YAML files (for pushes)
+      - name: Run prettier check on all YAML files
+        if: github.event_name == 'push'
+        run: |
+          set -o pipefail
+          
+          echo "## Prettier Check Results (All YAML Files)" > prettier_results.md
+          echo "" >> prettier_results.md
+          
+          PRETTIER_FAILED=0
+          
+          # Run prettier check and capture output
+          if npm run format:check:dbt 2>&1 | tee prettier_output.txt; then
+            echo "$EMOJI_CHECK_MARK All YAML files are properly formatted" >> prettier_results.md
+          else
+            echo "$EMOJI_CROSS_MARK Some YAML files need formatting" >> prettier_results.md
+            PRETTIER_FAILED=1
+          fi
+          
+          echo "" >> prettier_results.md
+          echo "### Prettier Output:" >> prettier_results.md
+          echo '```' >> prettier_results.md
+          cat prettier_output.txt >> prettier_results.md
+          echo '```' >> prettier_results.md
+          
+          if [ $PRETTIER_FAILED -eq 1 ]; then
+            echo "" >> prettier_results.md
+            echo "**Fix formatting by running:** \`npm run format:dbt\`" >> prettier_results.md
+            echo ""
+            echo "Prettier check failed! Please fix the formatting issues above."
+            exit 1
+          fi
+
+      # Upload prettier results
+      - name: Upload prettier results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: prettier-results
+          path: prettier_results.md
+          retention-days: 7
+
+      # Record end time and calculate duration
+      - name: Record end time and calculate duration
+        id: duration
+        if: always()
+        run: |
+          end_time=$(date +%s)
+          start_time=${{ steps.start_time.outputs.start_time }}
+          duration=$((end_time - start_time))
+          minutes=$((duration / 60))
+          seconds=$((duration % 60))
+          echo "duration=${minutes}m ${seconds}s" >> $GITHUB_OUTPUT
+
+  summary:
+    runs-on: ubuntu-latest
+    needs: [setup-and-validate, pre-commit-hooks, prettier-check]
+    if: always()
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./artifacts
+
+      - name: Generate comprehensive summary
+        run: |
+          echo "# $EMOJI_ROCKET dbt CI/CD Pipeline Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## $EMOJI_BAR_CHART Job Status Overview" >> $GITHUB_STEP_SUMMARY
+          echo "| Job | Status | Started | Duration |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----|--------|---------|----------|" >> $GITHUB_STEP_SUMMARY
+          # Job statuses with actual timing info
+          if [ "${{ needs.setup-and-validate.result }}" = "success" ]; then
+            echo "| Setup & Validation | $EMOJI_CHECK_MARK Success | ${{ needs.setup-and-validate.outputs.start_time_readable || 'N/A' }} | ${{ needs.setup-and-validate.outputs.duration || 'N/A' }} |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| Setup & Validation | $EMOJI_CROSS_MARK Failed | ${{ needs.setup-and-validate.outputs.start_time_readable || 'N/A' }} | ${{ needs.setup-and-validate.outputs.duration || 'N/A' }} |" >> $GITHUB_STEP_SUMMARY
+          fi
+          if [ "${{ needs.pre-commit-hooks.result }}" = "success" ]; then
+            echo "| Pre-commit Hooks | $EMOJI_CHECK_MARK Success | ${{ needs.pre-commit-hooks.outputs.start_time_readable || 'N/A' }} | ${{ needs.pre-commit-hooks.outputs.duration || 'N/A' }} |" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ needs.pre-commit-hooks.result }}" = "failure" ]; then
+            echo "| Pre-commit Hooks | $EMOJI_CROSS_MARK Failed | ${{ needs.pre-commit-hooks.outputs.start_time_readable || 'N/A' }} | ${{ needs.pre-commit-hooks.outputs.duration || 'N/A' }} |" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ needs.pre-commit-hooks.result }}" = "skipped" ] || [ -z "${{ needs.pre-commit-hooks.result }}" ]; then
+            echo "| Pre-commit Hooks | $EMOJI_NEXT_TRACK Skipped | - | - |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| Pre-commit Hooks | $EMOJI_NEXT_TRACK Unknown | - | - |" >> $GITHUB_STEP_SUMMARY
+          fi
+          if [ "${{ needs.prettier-check.result }}" = "success" ]; then
+            echo "| Prettier Check | $EMOJI_CHECK_MARK Success | ${{ needs.prettier-check.outputs.start_time_readable || 'N/A' }} | ${{ needs.prettier-check.outputs.duration || 'N/A' }} |" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ needs.prettier-check.result }}" = "failure" ]; then
+            echo "| Prettier Check | $EMOJI_CROSS_MARK Failed | ${{ needs.prettier-check.outputs.start_time_readable || 'N/A' }} | ${{ needs.prettier-check.outputs.duration || 'N/A' }} |" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ needs.prettier-check.result }}" = "skipped" ] || [ -z "${{ needs.prettier-check.result }}" ]; then
+            echo "| Prettier Check | $EMOJI_NEXT_TRACK Skipped | - | - |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| Prettier Check | $EMOJI_NEXT_TRACK Unknown | - | - |" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          # Add pre-commit results if available
+          if [ -f "./artifacts/precommit-results/precommit_results.md" ]; then
+            echo "## $EMOJI_MAGNIFYING_GLASS Pre-commit Hook Details" >> $GITHUB_STEP_SUMMARY
+            cat ./artifacts/precommit-results/precommit_results.md >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          fi
+          # Add prettier results if available
+          if [ -f "./artifacts/prettier-results/prettier_results.md" ]; then
+            echo "## $EMOJI_PAINT_BRUSH Prettier Check Details" >> $GITHUB_STEP_SUMMARY
+            cat ./artifacts/prettier-results/prettier_results.md >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          fi
+          # Add links to artifacts
+          echo "## $EMOJI_PAPERCLIP Available Artifacts" >> $GITHUB_STEP_SUMMARY
+          echo "The following artifacts are available for download:" >> $GITHUB_STEP_SUMMARY
+          echo "- **Pre-commit Results**: Detailed hook execution logs" >> $GITHUB_STEP_SUMMARY
+          echo "- **Prettier Results**: YAML formatting check results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          # Overall status
+          if [[ "${{ needs.setup-and-validate.result }}" == "failure" || "${{ needs.pre-commit-hooks.result }}" == "failure" || "${{ needs.prettier-check.result }}" == "failure" ]]; then
+            echo "## $EMOJI_CROSS_MARK Pipeline Status: FAILED" >> $GITHUB_STEP_SUMMARY
+            echo "One or more checks failed. Please review the details above and fix the issues." >> $GITHUB_STEP_SUMMARY
+            exit 1
+          else
+            echo "## $EMOJI_CHECK_MARK Pipeline Status: SUCCESS" >> $GITHUB_STEP_SUMMARY
+            echo "All checks passed successfully! $EMOJI_PARTY_POPPER" >> $GITHUB_STEP_SUMMARY
+          fi
