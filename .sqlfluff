@@ -5,7 +5,7 @@ max_line_length = 150
 large_file_skip_byte_limit = 0
 sql_file_exts = .sql
 processes = -1
-exclude_rules = CV11, AM02
+exclude_rules = CV11, AM02, AM06
 
 
 [sqlfluff:templater:dbt]

@@ -22,14 +22,8 @@ vars:
   "dbt_date:time_zone": "America/Los_Angeles"
 
 seeds:
-  jaffle_shop:
-    +schema: raw
-    jaffle-data:
-      +enabled: "{{ var('load_source_data', false) }}"
+  +schema: raw
+  +file_format: iceberg
 
-models:
-  jaffle_shop:
-    staging:
-      +materialized: view
-    marts:
-      +materialized: table
+flags:
+  use_materialization_v2: True
