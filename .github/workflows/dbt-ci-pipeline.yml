@@ -102,7 +102,7 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: "pip"
-          cache-dependency-path: 'dbt-requirements.txt'
+          cache-dependency-path: "dbt-requirements.txt"
 
       # Install required Python dependencies for dbt and pre-commit
       - name: Install Python dependencies
