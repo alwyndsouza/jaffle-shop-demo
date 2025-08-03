@@ -1,0 +1,5 @@
+pre-commit==4.2.0
+dbt-core==1.9.8
+dbt-databricks==1.9.5
+sqlfluff==3.4.1
+sqlfluff-templater-dbt==3.4.1
