@@ -9,6 +9,7 @@ env:
 
   DBT_HOST: ${{ secrets.DBT_HOST }}
   DBT_HTTP_PATH: ${{ secrets.DBT_HTTP_PATH }}
+  DBT_TOKEN: ${{ secrets.DBT_TOKEN }}
 
   # Node.js Configuration
   NODE_VERSION: "18"
