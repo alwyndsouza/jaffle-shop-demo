@@ -56,6 +56,7 @@ repos:
     rev: v2.0.7
     hooks:
       # Stage 1: Basic parsing and validation
+      - id: dbt-deps
       - id: dbt-parse
         args: ["--cmd-flags", "++profiles-dir", ".", "++project-dir", "."]
         stages: [pre-commit, manual]
