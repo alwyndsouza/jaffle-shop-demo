@@ -23,7 +23,7 @@ vars:
 
 seeds:
   +schema: raw
-  +file_format: iceberg
+  #+file_format: iceberg
 
 flags:
   use_materialization_v2: True

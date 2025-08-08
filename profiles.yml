@@ -4,8 +4,8 @@ jaffle_shop_demo:
       type: databricks
       catalog: workspace
       schema: alwyn_dev
-      host: dbc-49db3428-d3d7.cloud.databricks.com
-      http_path: /sql/1.0/warehouses/8f808b87a257bcf4
+      host: "{{ env_var('DBT_HOST') }}"
+      http_path: "{{ env_var('DBT_HTTP_PATH') }}"
       auth_type: oauth
       threads: 4
   target: dev

@@ -1,4 +1,4 @@
 node_modules
-dbt/siebel/target/
-dbt/siebel/dbt_packages/
-dbt/siebel/logs/
+target/
+dbt_packages/
+logs/
