@@ -62,7 +62,7 @@ repos:
         stages: [pre-commit, manual]
 
       - id: dbt-docs-generate
-        stages: [manual]
+        stages: [pre-commit,manual]
         #args: ["--cmd-flags","++empty-catalog", "++profiles-dir", ".", "++project-dir", "."]
 
       # Stage 2: Model testing and documentation checks
@@ -77,9 +77,9 @@ repos:
           ]
         stages: [pre-commit, manual]
 
-      #- id: check-model-has-all-columns
-      #  files: ^models
-      #  stages: [manual]
+      - id: check-model-has-all-columns
+        files: ^models
+        stages: [pre-commit,manual]
 
       - id: check-model-has-properties-file
         files: ^models
