@@ -1,0 +1,23 @@
+version: 2
+
+models:
+  - name: products
+    description: "Products dimension table."
+    columns:
+      - name: product_id
+        description: "Primary key for the products table."
+        tests:
+          - unique
+          - not_null
+      - name: product_name
+        description: "Name of the product."
+      - name: product_type
+        description: "Type of the product."
+      - name: product_description
+        description: "Description of the product."
+      - name: product_price
+        description: "Price of the product in dollars."
+      - name: is_food_item
+        description: "Boolean flag indicating if the product is a food item."
+      - name: is_drink_item
+        description: "Boolean flag indicating if the product is a drink item."

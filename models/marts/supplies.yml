@@ -1,3 +1,25 @@
+version: 2
+
+models:
+  - name: supplies
+    description: "Supplies dimension table."
+    columns:
+      - name: supply_uuid
+        description: "Primary key for the supplies table."
+        tests:
+          - unique
+          - not_null
+      - name: supply_id
+        description: "Original supply ID."
+      - name: product_id
+        description: "Product ID for the supply."
+      - name: supply_name
+        description: "Name of the supply."
+      - name: supply_cost
+        description: "Cost of the supply in dollars."
+      - name: is_perishable_supply
+        description: "Boolean flag indicating if the supply is perishable."
+
 semantic_models:
   #The name of the semantic model.
   - name: supplies
