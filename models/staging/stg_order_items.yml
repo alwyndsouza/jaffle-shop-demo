@@ -14,3 +14,5 @@ models:
           #- relationships:
           #    to: ref('stg_orders')
           #    field: order_id
+      - name: product_id
+        description: The id of the product.

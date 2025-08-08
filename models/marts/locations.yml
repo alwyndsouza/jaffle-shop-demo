@@ -1,3 +1,21 @@
+version: 2
+
+models:
+  - name: locations
+    description: "Locations dimension table."
+    columns:
+      - name: location_id
+        description: "Primary key for the locations table."
+        tests:
+          - unique
+          - not_null
+      - name: location_name
+        description: "The name of the location."
+      - name: tax_rate
+        description: "The tax rate at the location."
+      - name: opened_date
+        description: "The date the location opened."
+
 semantic_models:
   - name: locations
     description: |

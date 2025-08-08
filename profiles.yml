@@ -1,23 +1,6 @@
 jaffle_shop_demo:
+  target: dev
   outputs:
     dev:
-      type: databricks
-      catalog: workspace
-      schema: alwyn_dev
-      host: "{{ env_var('DBT_HOST') }}"
-      http_path: "{{ env_var('DBT_HTTP_PATH') }}"
-      auth_type: token
-      token: "{{ env_var('DBT_TOKEN') }}"
-      threads: 4
-
-    prod:
-      type: databricks
-      catalog: workspace
-      schema: alwyn_prod
-      host: "{{ env_var('DBT_HOST') }}"
-      http_path: "{{ env_var('DBT_HTTP_PATH') }}"
-      auth_type: token
-      token: "{{ env_var('DBT_TOKEN') }}"
-      threads: 4
-
-  target: "{{ env_var('DBT_TARGET', 'dev') }}"
+      type: duckdb
+      path: 'dbt.duckdb'

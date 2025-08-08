@@ -1,0 +1,11 @@
+version: 2
+
+models:
+  - name: metricflow_time_spine
+    description: "A time spine for MetricFlow."
+    columns:
+      - name: date_day
+        description: "A single day."
+        tests:
+          - unique
+          - not_null

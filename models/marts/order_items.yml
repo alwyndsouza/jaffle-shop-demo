@@ -1,15 +1,32 @@
 models:
   - name: order_items
+    description: "Order items fact table."
     columns:
       - name: order_item_id
+        description: "Primary key for the order items table."
         data_tests:
           - not_null
           - unique
       - name: order_id
+        description: "Foreign key to the orders table."
         #data_tests:
         #  - relationships:
         #      to: ref('orders')
         #      field: order_id
+      - name: product_id
+        description: "The id of the product."
+      - name: product_name
+        description: "The name of the product."
+      - name: product_price
+        description: "The price of the product."
+      - name: is_food_item
+        description: "A boolean indicating if the item is a food item."
+      - name: is_drink_item
+        description: "A boolean indicating if the item is a drink item."
+      - name: ordered_at
+        description: "The timestamp when the order was placed."
+      - name: supply_cost
+        description: "The cost of the supply."
 
 unit_tests:
   - name: test_supply_costs_sum_correctly

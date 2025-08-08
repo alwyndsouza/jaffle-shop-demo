@@ -7,3 +7,5 @@ models:
         data_tests:
           - not_null
           - unique
+      - name: customer_name
+        description: The name of the customer.

@@ -10,3 +10,13 @@ models:
         data_tests:
           - not_null
           - unique
+      - name: supply_id
+        description: The id of the supply.
+      - name: product_id
+        description: The id of the product.
+      - name: supply_name
+        description: The name of the supply.
+      - name: supply_cost
+        description: The cost of the supply.
+      - name: is_perishable_supply
+        description: A boolean indicating if the supply is perishable.

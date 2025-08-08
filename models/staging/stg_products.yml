@@ -7,3 +7,15 @@ models:
         data_tests:
           - not_null
           - unique
+      - name: product_name
+        description: The name of the product.
+      - name: product_type
+        description: The type of the product.
+      - name: product_description
+        description: The description of the product.
+      - name: product_price
+        description: The price of the product.
+      - name: is_food_item
+        description: A boolean indicating if the product is a food item.
+      - name: is_drink_item
+        description: A boolean indicating if the product is a drink item.

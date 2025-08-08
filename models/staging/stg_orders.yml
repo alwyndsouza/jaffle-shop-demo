@@ -10,3 +10,21 @@ models:
         data_tests:
           - not_null
           - unique
+      - name: customer_id
+        description: The id of the customer who placed the order.
+      - name: location_id
+        description: The id of the location where the order was placed.
+      - name: ordered_at
+        description: The timestamp when the order was placed.
+      - name: order_total_cents
+        description: The total amount of the order in cents.
+      - name: subtotal_cents
+        description: The subtotal of the order in cents.
+      - name: tax_paid_cents
+        description: The amount of tax paid for the order in cents.
+      - name: order_total
+        description: The total amount of the order.
+      - name: subtotal
+        description: The subtotal of the order.
+      - name: tax_paid
+        description: The amount of tax paid for the order.
