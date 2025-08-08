@@ -23,6 +23,7 @@ fi
 # Confirm variables are loaded
 echo "DBT_HOST: $DBT_HOST"
 echo "DBT_HTTP_PATH: $DBT_HTTP_PATH"
+echo "DBT_TOKEN: $DBT_TOKEN"
 
 # Run dbt debug
 echo "Running dbt debug..."

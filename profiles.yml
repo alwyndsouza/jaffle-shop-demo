@@ -6,8 +6,18 @@ jaffle_shop_demo:
       schema: alwyn_dev
       host: "{{ env_var('DBT_HOST') }}"
       http_path: "{{ env_var('DBT_HTTP_PATH') }}"
-      auth_type: oauth
+      auth_type: token
+      token: "{{ env_var('DBT_TOKEN') }}"
       threads: 4
-  
-  target: "{{ env_var('DBT_TARGET', 'dev') }}"
 
+    prod:
+      type: databricks
+      catalog: workspace
+      schema: alwyn_prod
+      host: "{{ env_var('DBT_HOST') }}"
+      http_path: "{{ env_var('DBT_HTTP_PATH') }}"
+      auth_type: token
+      token: "{{ env_var('DBT_TOKEN') }}"
+      threads: 4
+
+  target: "{{ env_var('DBT_TARGET', 'dev') }}"
