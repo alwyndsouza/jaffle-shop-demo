@@ -287,4 +287,67 @@ At present, the popular SQL linter and formatter SQLFluff doesn't play nicely wi
 
 We have kept a `.sqlfluff` config file to show what that looks like, and to future proof the repo for when the Cloud CLI support linting and formatting.
 
+### 🚀 GitHub Actions CI Pipeline
+
+This project includes a comprehensive GitHub Actions workflow for continuous integration. The workflow file is located at `.github/workflows/dbt-ci-pipeline.yml` and performs the following checks:
+
+1. **Setup & Validation**
+   - Detects file changes in the repository
+   - Sets up Python environment
+   - Validates project dependencies
+
+2. **Pre-commit Hooks**
+   - Runs code quality checks
+   - Ensures consistent code formatting
+   - Validates YAML files
+   - Checks file endings and whitespace
+
+3. **Prettier Check**
+   - Enforces consistent YAML formatting
+   - Validates dbt configuration files
+   - Runs on changed files for PRs and all files for pushes
+
+4. **Summary Report**
+   - Provides detailed execution results
+   - Shows timing information for each job
+   - Highlights any failures or issues
+   - Includes links to artifacts for debugging
+
+#### Setting up GitHub Secrets
+
+To enable the CI pipeline, you need to set up the following secrets in your GitHub repository:
+
+1. Go to your repository settings
+2. Navigate to Secrets and Variables > Actions
+3. Add the following secrets:
+   - `DBT_HOST`: Your Databricks workspace URL
+   - `DBT_HTTP_PATH`: The HTTP path to your SQL warehouse
+   - `DBT_TOKEN`: Your Databricks access token
+
+These values can be found in your `.env` file locally.
+
+#### Running Tests Locally
+
+Before pushing changes, you can run the same checks locally:
+
+1. Install pre-commit hooks:
+```bash
+pre-commit install
+```
+
+2. Run pre-commit checks:
+```bash
+pre-commit run --all-files
+```
+
+3. Run Prettier formatting:
+```bash
+npm run format:dbt
+```
+
+The CI pipeline will automatically run on:
+- Push to `main` branch
+- Pull requests to `main` and `staging` branches
+- Any branches starting with `feature/*`
+
 [^1]: Again, I can't emphasize enough that you should not use dbt and seeds for data loading in a production project. This is just for convenience within this learning project.
