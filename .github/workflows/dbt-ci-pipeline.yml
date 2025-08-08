@@ -7,10 +7,8 @@ env:
   DBT_PROFILE: "jaffle_shop_demo"
   DBT_TARGET: "dev"
 
-
   DBT_HOST: ${{ secrets.DBT_HOST }}
   DBT_HTTP_PATH: ${{ secrets.DBT_HTTP_PATH }}
-
 
   # Node.js Configuration
   NODE_VERSION: "18"
