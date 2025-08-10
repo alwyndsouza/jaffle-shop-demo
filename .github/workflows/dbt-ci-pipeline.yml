@@ -540,10 +540,10 @@ jobs:
         id: set_schema
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            echo "DBT_SCHEMA=pr_${{ github.event.pull_request.number }}_${github.sha}" >> $GITHUB_ENV
+            echo "DBT_SCHEMA=pr_${{ github.event.pull_request.number }}_${{ github.sha }}" >> $GITHUB_ENV
           else
             branch_name=$(echo "${{ github.ref_name }}" | sed 's/[^a-zA-Z0-9_]/-/g')
-            echo "DBT_SCHEMA=${branch_name}_${github.sha}" >> $GITHUB_ENV
+            echo "DBT_SCHEMA=${branch_name}_${{ github.sha }}" >> $GITHUB_ENV
           fi
           echo "dbt schema: $DBT_SCHEMA"
 
