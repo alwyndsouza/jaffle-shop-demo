@@ -535,6 +535,18 @@ jobs:
         run: |
           pip install -r dbt-requirements.txt
 
+      # Set dynamic schema for PRs and feature branches
+      - name: Set dynamic schema name
+        id: set_schema
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "DBT_SCHEMA=pr_${{ github.event.pull_request.number }}_${github.sha}" >> $GITHUB_ENV
+          else
+            branch_name=$(echo "${{ github.ref_name }}" | sed 's/[^a-zA-Z0-9_]/-/g')
+            echo "DBT_SCHEMA=${branch_name}_${github.sha}" >> $GITHUB_ENV
+          fi
+          echo "dbt schema: $DBT_SCHEMA"
+
       # Install dbt packages
       - name: Install dbt packages
         run: dbt deps
@@ -576,6 +588,13 @@ jobs:
           name: dbt-results
           path: dbt_results.md
           retention-days: 7
+
+      # Drop the dynamic schema
+      - name: Drop dynamic schema
+        if: always()
+        run: |
+          echo "Dropping schema ${{ env.DBT_SCHEMA }}..."
+          dbt run-operation drop_schema --args '{ "schema_name": "${{ env.DBT_SCHEMA }}" }'
 
       # Record end time and calculate duration
       - name: Record end time and calculate duration

@@ -3,7 +3,7 @@ jaffle_shop_demo:
     dev:
       type: databricks
       catalog: workspace
-      schema: alwyn_dev
+      schema: "{{ env_var('DBT_SCHEMA', 'alwyn_dev') }}"
       host: "{{ env_var('DBT_HOST') }}"
       http_path: "{{ env_var('DBT_HTTP_PATH') }}"
       auth_type: token
