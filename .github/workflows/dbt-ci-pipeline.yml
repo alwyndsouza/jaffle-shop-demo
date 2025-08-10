@@ -497,9 +497,100 @@ jobs:
           seconds=$((duration % 60))
           echo "duration=${minutes}m ${seconds}s" >> $GITHUB_OUTPUT
 
+  dbt-run-and-test:
+    runs-on: ubuntu-latest
+    needs: setup-and-validate
+    if: needs.setup-and-validate.outputs.dbt-files-changed == 'true'
+    timeout-minutes: 20
+
+    outputs:
+      start_time: ${{ steps.start_time.outputs.start_time }}
+      start_time_readable: ${{ steps.start_time.outputs.start_time_readable }}
+      duration: ${{ steps.duration.outputs.duration }}
+
+    steps:
+      # Record the start time for the job
+      - name: Record start time
+        id: start_time
+        run: |
+          echo "start_time=$(date +%s)" >> $GITHUB_OUTPUT
+          echo "start_time_readable=$(date -u '+%H:%M:%S UTC')" >> $GITHUB_OUTPUT
+
+      # Checkout the repository code
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Set up the Python environment
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: "pip"
+
+      # Install required Python dependencies for dbt
+      - name: Install Python dependencies
+        run: |
+          pip install -r dbt-requirements.txt
+
+      # Install dbt packages
+      - name: Install dbt packages
+        run: dbt deps
+
+      # Run dbt build
+      - name: Run dbt build
+        run: |
+          set -o pipefail
+
+          echo "## dbt Build Results" > dbt_results.md
+          echo "" >> dbt_results.md
+
+          DBT_FAILED=0
+
+          if dbt build 2>&1 | tee dbt_output.txt; then
+            echo "$EMOJI_CHECK_MARK dbt build completed successfully" >> dbt_results.md
+          else
+            echo "$EMOJI_CROSS_MARK dbt build failed" >> dbt_results.md
+            DBT_FAILED=1
+          fi
+
+          echo "" >> dbt_results.md
+          echo "### dbt Output:" >> dbt_results.md
+          echo '```' >> dbt_results.md
+          cat dbt_output.txt >> dbt_results.md
+          echo '```' >> dbt_results.md
+
+          if [ $DBT_FAILED -eq 1 ]; then
+            echo ""
+            echo "dbt build failed! Please check the logs for details."
+            exit 1
+          fi
+
+      # Upload dbt results
+      - name: Upload dbt results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dbt-results
+          path: dbt_results.md
+          retention-days: 7
+
+      # Record end time and calculate duration
+      - name: Record end time and calculate duration
+        id: duration
+        if: always()
+        run: |
+          end_time=$(date +%s)
+          start_time=${{ steps.start_time.outputs.start_time }}
+          duration=$((end_time - start_time))
+          minutes=$((duration / 60))
+          seconds=$((duration % 60))
+          echo "duration=${minutes}m ${seconds}s" >> $GITHUB_OUTPUT
+
   summary:
     runs-on: ubuntu-latest
-    needs: [setup-and-validate, pre-commit-hooks, prettier-check]
+    needs: [setup-and-validate, pre-commit-hooks, prettier-check, dbt-run-and-test]
     if: always()
 
     steps:
@@ -539,6 +630,15 @@ jobs:
           else
             echo "| Prettier Check | $EMOJI_NEXT_TRACK Unknown | - | - |" >> $GITHUB_STEP_SUMMARY
           fi
+          if [ "${{ needs.dbt-run-and-test.result }}" = "success" ]; then
+            echo "| dbt Build & Test | $EMOJI_CHECK_MARK Success | ${{ needs.dbt-run-and-test.outputs.start_time_readable || 'N/A' }} | ${{ needs.dbt-run-and-test.outputs.duration || 'N/A' }} |" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ needs.dbt-run-and-test.result }}" = "failure" ]; then
+            echo "| dbt Build & Test | $EMOJI_CROSS_MARK Failed | ${{ needs.dbt-run-and-test.outputs.start_time_readable || 'N/A' }} | ${{ needs.dbt-run-and-test.outputs.duration || 'N/A' }} |" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ needs.dbt-run-and-test.result }}" = "skipped" ] || [ -z "${{ needs.dbt-run-and-test.result }}" ]; then
+            echo "| dbt Build & Test | $EMOJI_NEXT_TRACK Skipped | - | - |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| dbt Build & Test | $EMOJI_NEXT_TRACK Unknown | - | - |" >> $GITHUB_STEP_SUMMARY
+          fi
           echo "" >> $GITHUB_STEP_SUMMARY
           # Add pre-commit results if available
           if [ -f "./artifacts/precommit-results/precommit_results.md" ]; then
@@ -552,14 +652,21 @@ jobs:
             cat ./artifacts/prettier-results/prettier_results.md >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
           fi
+          # Add dbt results if available
+          if [ -f "./artifacts/dbt-results/dbt_results.md" ]; then
+            echo "## $EMOJI_ROCKET dbt Build Details" >> $GITHUB_STEP_SUMMARY
+            cat ./artifacts/dbt-results/dbt_results.md >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          fi
           # Add links to artifacts
           echo "## $EMOJI_PAPERCLIP Available Artifacts" >> $GITHUB_STEP_SUMMARY
           echo "The following artifacts are available for download:" >> $GITHUB_STEP_SUMMARY
           echo "- **Pre-commit Results**: Detailed hook execution logs" >> $GITHUB_STEP_SUMMARY
           echo "- **Prettier Results**: YAML formatting check results" >> $GITHUB_STEP_SUMMARY
+          echo "- **dbt Results**: dbt build and test logs" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           # Overall status
-          if [[ "${{ needs.setup-and-validate.result }}" == "failure" || "${{ needs.pre-commit-hooks.result }}" == "failure" || "${{ needs.prettier-check.result }}" == "failure" ]]; then
+          if [[ "${{ needs.setup-and-validate.result }}" == "failure" || "${{ needs.pre-commit-hooks.result }}" == "failure" || "${{ needs.prettier-check.result }}" == "failure" || "${{ needs.dbt-run-and-test.result }}" == "failure" ]]; then
             echo "## $EMOJI_CROSS_MARK Pipeline Status: FAILED" >> $GITHUB_STEP_SUMMARY
             echo "One or more checks failed. Please review the details above and fix the issues." >> $GITHUB_STEP_SUMMARY
             exit 1
