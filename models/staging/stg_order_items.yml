@@ -16,3 +16,5 @@ models:
           #    field: order_id
       - name: product_id
         description: The id of the product.
+        data_tests:
+          - not_null
