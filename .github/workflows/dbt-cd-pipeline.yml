@@ -1,9 +1,8 @@
 name: dbt-cd-pipeline
 
 on:
-  push:
-    branches:
-      - main
+  issue_comment:
+    types: [created]
 
 env:
   DBT_PROFILES_DIR: "."
@@ -21,6 +20,7 @@ env:
 
 jobs:
   deploy-to-prod:
+    if: github.event.issue.pull_request != '' && contains(github.event.comment.body, '/deploy')
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
@@ -39,7 +39,21 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
+          ref: main
           fetch-depth: 0
+
+      - name: Verify PR details
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_DATA=$(gh pr view ${{ github.event.issue.number }} --json baseRefName,merged)
+          BASE_REF=$(echo "$PR_DATA" | jq -r .baseRefName)
+          MERGED=$(echo "$PR_DATA" | jq -r .merged)
+
+          if [[ "$BASE_REF" != "main" || "$MERGED" != "true" ]]; then
+            echo "Deployment is only allowed for merged PRs to the main branch."
+            exit 1
+          fi
 
       - name: Set up Python
         uses: actions/setup-python@v5
