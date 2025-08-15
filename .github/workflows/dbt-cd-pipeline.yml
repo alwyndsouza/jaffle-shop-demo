@@ -56,6 +56,15 @@ jobs:
       - name: Install dbt packages
         run: dbt deps
 
+      - name: Download prod manifest
+        uses: Legit-Labs/action-download-artifact@v2
+        with:
+          name: dbt-manifest-prod
+          path: prod-artifacts
+          workflow: dbt-cd-pipeline.yml
+          workflow_conclusion: success
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Run dbt build
         run: |
           set -o pipefail
@@ -65,11 +74,22 @@ jobs:
 
           DBT_FAILED=0
 
-          if dbt build 2>&1 | tee dbt_output.txt; then
-            echo "$EMOJI_CHECK_MARK dbt build completed successfully" >> dbt_results.md
+          if [ -d "prod-artifacts" ]; then
+            echo "Found production artifacts. Running modified models only."
+            if dbt build --select state:modified+ --defer --state prod-artifacts 2>&1 | tee dbt_output.txt; then
+              echo "$EMOJI_CHECK_MARK dbt build completed successfully" >> dbt_results.md
+            else
+              echo "$EMOJI_CROSS_MARK dbt build failed" >> dbt_results.md
+              DBT_FAILED=1
+            fi
           else
-            echo "$EMOJI_CROSS_MARK dbt build failed" >> dbt_results.md
-            DBT_FAILED=1
+            echo "No production artifacts found. Running a full build."
+            if dbt build 2>&1 | tee dbt_output.txt; then
+              echo "$EMOJI_CHECK_MARK dbt build completed successfully" >> dbt_results.md
+            else
+              echo "$EMOJI_CROSS_MARK dbt build failed" >> dbt_results.md
+              DBT_FAILED=1
+            fi
           fi
 
           echo "" >> dbt_results.md
@@ -83,6 +103,14 @@ jobs:
             echo "dbt build failed! Please check the logs for details."
             exit 1
           fi
+
+      - name: Upload dbt manifest
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dbt-manifest-prod
+          path: target/manifest.json
+          retention-days: 7
 
       - name: Upload dbt results
         uses: actions/upload-artifact@v4
