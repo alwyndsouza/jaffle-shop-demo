@@ -58,6 +58,7 @@ jobs:
 
       - name: Download prod manifest
         uses: Legit-Labs/action-download-artifact@v2
+        continue-on-error: true
         with:
           name: dbt-manifest-prod
           path: prod-artifacts
