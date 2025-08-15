@@ -1,5 +1,5 @@
 [![dbt-ci-pipeline](https://github.com/alwyndsouza/jaffle-shop-demo/actions/workflows/dbt-ci-pipeline.yml/badge.svg?branch=dev)](https://github.com/alwyndsouza/jaffle-shop-demo/actions/workflows/dbt-ci-pipeline.yml)
-[![dbt-cd-pipeline](https://github.com/alwyndsouza/jaffle-shop-demo/actions/workflows/dbt-cd-pipeline.yml/badge.svg)](https://github.com/alwyndsouza/jaffle-shop-demo/actions/workflows/dbt-cd-pipeline.yml)
+[![dbt-cd-pipeline](https://github.com/alwyndsouza/jaffle-shop-demo/actions/workflows/dbt-cd-pipeline.yml/badge.svg?branch=main)](https://github.com/alwyndsouza/jaffle-shop-demo/actions/workflows/dbt-cd-pipeline.yml)
 
 # Jaffle Shop Demo - CI/CD
 
